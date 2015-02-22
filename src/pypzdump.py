@@ -6,8 +6,7 @@ import signal
 import MySQLdb
 import subprocess
 from Queue import Queue
-from thread import allocate_lock
-from threading import Thread
+from threading import Thread,RLock
 
 backup_path = "/tmp/backups"
 num_threads = 6
@@ -50,11 +49,9 @@ def dump_table_worker(i, q, db):
         checksumcursor.execute("CHECKSUM TABLE `%s`.`%s`" % (table[0], table[1]))
         checksum = checksumcursor.fetchone()
         
-        lock.acquire()
-        # TODO: check if we already have the table with this checksum
-        print("worker: ", i+1, table, checksum[1])
-        lock.release()
-        
+        with lock:
+            # TODO: check if we already have the table with this checksum
+            print("worker: ", i+1, table, checksum[1])
         status = dump_table(table)
         
         # TODO: log status and checksum etc. here
@@ -93,7 +90,7 @@ with open(statfile_name, "w") as statfile:
     statfile.write(str(slave_info))
 
 # we need to get a lock to print threadinfo nicely
-lock = allocate_lock()
+lock = RLock()
 tables_queue = Queue()
 
 # set up worker threads
