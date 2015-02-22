@@ -85,7 +85,7 @@ for i in range(num_threads):
 
 log("Get the list of tables")
 # Get all the tables from information_schema
-sql = "SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.TABLES WHERE ENGINE IN('MyISAM', 'InnoDB') AND TABLE_SCHEMA NOT IN('information_schema', 'performance_schema') LIMIT 6"
+sql = "SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.TABLES WHERE ENGINE IN('MyISAM', 'InnoDB') AND TABLE_SCHEMA NOT IN('information_schema', 'performance_schema')"
 c.execute(sql)
 row=c.fetchone()
 
