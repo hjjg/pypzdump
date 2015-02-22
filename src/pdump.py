@@ -13,7 +13,7 @@ default_file="./my.cnf"
 #backuphost=""
 num_threads = 6
 
-def exitfail(message="an error occured and someone was too lazy to catch it", code=255):
+def exitfail(message="an error occured and someone was too lazy to catch it", code=127):
     sys.stderr.write(message)
     sys.exit(code)
 
