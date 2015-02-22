@@ -37,6 +37,7 @@ def dump_table(table):
     with open(filename, "w") as outfile:
         outfile.flush()
         return_code = subprocess.call(cmd, stdout=outfile)
+    return return_code
 
 def dump_table_worker(i, q, db):
     while True:
@@ -45,11 +46,15 @@ def dump_table_worker(i, q, db):
         checksumcursor = db.cursor()
         checksumcursor.execute("CHECKSUM TABLE `%s`.`%s`" % (table[0], table[1]))
         checksum = checksumcursor.fetchone()
+        
         lock.acquire()
+        # TODO: check if we already have the table with this checksum
         print("worker: ", i+1, table, checksum[1])
         lock.release()
         
-        dump_table(table)
+        status = dump_table(table)
+        
+        # TODO: log status and checksum etc. here
         
         q.task_done()
 
