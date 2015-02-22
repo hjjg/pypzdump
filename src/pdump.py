@@ -9,6 +9,7 @@ from Queue import Queue
 from thread import allocate_lock
 from threading import Thread
 
+backup_path = "/tmp/backups"
 num_threads = 6
 try:
     default_file = sys.argv[1]
@@ -85,6 +86,11 @@ c.execute("SHOW SLAVE STATUS")
 slave_info=c.fetchone()
 if master_info == None and slave_info == None:
     exitfail("binlog is not enabled")
+
+statfile_name = os.path.join(backup_path, "master_slave_status.info")
+with open(statfile_name, "w") as statfile:
+    statfile.write(str(master_info) + "\n")
+    statfile.write(str(slave_info))
 
 # we need to get a lock to print threadinfo nicely
 lock = allocate_lock()
