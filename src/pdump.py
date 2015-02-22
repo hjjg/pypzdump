@@ -2,6 +2,7 @@
 import os
 import sys
 import time
+import signal
 import MySQLdb
 import subprocess
 from Queue import Queue
@@ -18,6 +19,10 @@ def exitfail(message="an error occured and someone was too lazy to catch it", co
 
 def log(message):
     print(message)
+
+def signal_handler(signum, frame):
+    log("Signal %s received. Exiting.")
+    sys.exit()
 
 def dump_table(table):
     global default_file
@@ -51,6 +56,8 @@ def dump_table_worker(i, q, db):
 
 if not os.path.isfile(default_file):
     exitfail("default_file not found: %s" % default_file, 1)
+
+signal.signal(signal.SIGINT, signal_handler)
 
 log("Connecting to the source database")
 try:
