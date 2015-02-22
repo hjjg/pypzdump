@@ -1,0 +1,7 @@
+[client]
+user=root
+password=myPassword!
+host=localhost
+
+[pypzdbdump]
+select_tables_statement=SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.TABLES WHERE ENGINE IN('MyISAM', 'InnoDB') AND TABLE_SCHEMA NOT IN('information_schema', 'performance_schema')

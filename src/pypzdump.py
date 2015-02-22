@@ -5,6 +5,7 @@ import time
 import signal
 import MySQLdb
 import subprocess
+import ConfigParser
 from Queue import Queue
 from threading import Thread,RLock
 
@@ -14,6 +15,9 @@ try:
     default_file = sys.argv[1]
 except:
     default_file = "./my.cnf"
+
+Config = ConfigParser.ConfigParser()
+Config.read(default_file)
 
 def exitfail(message="an error occured and someone was too lazy to catch it", code=127):
     sys.stderr.write(message)
@@ -104,8 +108,7 @@ for i in range(num_threads):
 
 log("Get the list of tables")
 # Get all the tables from information_schema
-sql = "SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.TABLES WHERE ENGINE IN('MyISAM', 'InnoDB') AND TABLE_SCHEMA NOT IN('information_schema', 'performance_schema')"
-c.execute(sql)
+c.execute(Config.get("pypzdbdump", "select_tables_statement"))
 row=c.fetchone()
 
 log("Filling the queue")
