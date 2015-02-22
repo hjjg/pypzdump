@@ -4,12 +4,14 @@ import sys
 import time
 import signal
 import MySQLdb
+import sqlite3
 import subprocess
 import ConfigParser
 from Queue import Queue
 from threading import Thread,RLock
 
 backup_path = "/tmp/backups"
+statefile_path = os.path.join(backup_path, "pypzdump.sqlite3")
 num_threads = 6
 try:
     default_file = sys.argv[1]
@@ -93,6 +95,8 @@ except:
 log("Get a global lock on")
 c.execute("FLUSH TABLES WITH READ LOCK")
 
+datetime_start = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+
 write_replication_state()
 
 # we need to get a lock to print threadinfo nicely
@@ -108,16 +112,26 @@ for i in range(num_threads):
     worker.setDaemon(True)
     worker.start()
 
+log("initialize statefile")
+statefile_conn = sqlite3.connect(statefile_path)
+statefile = statefile_conn.cursor()
+statefile.execute('''CREATE TABLE IF NOT EXISTS tables
+    (table_schema, table_name, table_chksum, last_modified, last_run, last_dumped)''')
+
 log("Get the list of tables")
 # Get all the tables from information_schema
+tables = []
 c.execute(Config.get("pypzdbdump", "select_tables_statement"))
 row=c.fetchone()
+tables.append(row)
 
 log("Filling the queue")
 # fill up the queue
 while row is not None:
+    # read table information from statefile here?
     tables_queue.put([row[0], row[1]])
     row = c.fetchone()
+    tables.append(row)
 
 
 # wait till all items in the queue are done
@@ -127,5 +141,7 @@ log("All tasks in the queue are done")
 # clean up environment
 log("Cleaning up")
 c.execute("UNLOCK TABLES")
+statefile_conn.commit()
+statefile_conn.close()
 sys.exit(0)
 #EOF
