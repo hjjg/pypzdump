@@ -10,9 +10,10 @@ from thread import allocate_lock
 from threading import Thread
 
 num_threads = 6
-default_file = "./my.cnf"
-if not empty(sys.argv[1]):
+try:
     default_file = sys.argv[1]
+except:
+    default_file = "./my.cnf"
 
 def exitfail(message="an error occured and someone was too lazy to catch it", code=127):
     sys.stderr.write(message)
