@@ -62,6 +62,21 @@ def dump_table_worker(i, q, db):
         
         q.task_done()
 
+def write_replication_state():
+    # this gets me something like this if binlog is enabled:
+    #    logfile, position, binlog_do_db, binlog_ignore_db
+    # ('mysql-bin.000001', 107L, '', '')
+    c.execute("SHOW MASTER STATUS")
+    master_info=c.fetchone()
+    c.execute("SHOW SLAVE STATUS")
+    slave_info=c.fetchone()
+    if master_info == None and slave_info == None:
+        exitfail("binlog is not enabled")
+
+    statfile_name = os.path.join(backup_path, "master_slave_status.info")
+    with open(statfile_name, "w") as statfile:
+        statfile.write(str(master_info) + "\n")
+        statfile.write(str(slave_info))
 
 if not os.path.isfile(default_file):
     exitfail("default_file not found: %s" % default_file, 1)
@@ -78,20 +93,7 @@ except:
 log("Get a global lock on")
 c.execute("FLUSH TABLES WITH READ LOCK")
 
-# this gets me something like this if binlog is enabled:
-#    logfile, position, binlog_do_db, binlog_ignore_db
-# ('mysql-bin.000001', 107L, '', '')
-c.execute("SHOW MASTER STATUS")
-master_info=c.fetchone()
-c.execute("SHOW SLAVE STATUS")
-slave_info=c.fetchone()
-if master_info == None and slave_info == None:
-    exitfail("binlog is not enabled")
-
-statfile_name = os.path.join(backup_path, "master_slave_status.info")
-with open(statfile_name, "w") as statfile:
-    statfile.write(str(master_info) + "\n")
-    statfile.write(str(slave_info))
+write_replication_state()
 
 # we need to get a lock to print threadinfo nicely
 lock = RLock()
