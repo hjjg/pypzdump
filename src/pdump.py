@@ -80,7 +80,9 @@ c.execute("FLUSH TABLES WITH READ LOCK")
 # ('mysql-bin.000001', 107L, '', '')
 c.execute("SHOW MASTER STATUS")
 master_info=c.fetchone()
-if master_info == None:
+c.execute("SHOW SLAVE STATUS")
+slave_info=c.fetchone()
+if master_info == None and slave_info == None:
     exitfail("binlog is not enabled")
 
 # we need to get a lock to print threadinfo nicely
