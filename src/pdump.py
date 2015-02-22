@@ -10,7 +10,6 @@ from threading import Thread
 
 
 default_file="./my.cnf"
-#backuphost=""
 num_threads = 6
 
 def exitfail(message="an error occured and someone was too lazy to catch it", code=127):
@@ -27,10 +26,10 @@ def dump_table(table):
         "--defaults-file=%s" % default_file,
         table[0],
         table[1],
-        
         ]
+
     filename = "/tmp/backups/%s.%s" % (table[0], table[1])
-    with open(filename, "a") as outfile:
+    with open(filename, "w") as outfile:
         outfile.flush()
         return_code = subprocess.call(cmd, stdout=outfile)
 
