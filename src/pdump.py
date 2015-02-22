@@ -2,16 +2,18 @@
 import os
 import sys
 import time
+import MySQLdb
+import subprocess
 from Queue import Queue
 from thread import allocate_lock
 from threading import Thread
-import MySQLdb
+
 
 default_file="./my.cnf"
-backuphost="10.39.0.2"
-num_threads = 4
+#backuphost=""
+num_threads = 6
 
-def exitfail(message="an error occured", code=255):
+def exitfail(message="an error occured and someone was too lazy to catch it", code=255):
     sys.stderr.write(message)
     sys.exit(code)
 
@@ -19,7 +21,18 @@ def log(message):
     print(message)
 
 def dump_table(table):
-    pass
+    global default_file
+    cmd = [
+        "mysqldump", 
+        "--defaults-file=%s" % default_file,
+        table[0],
+        table[1],
+        
+        ]
+    filename = "/tmp/backups/%s.%s" % (table[0], table[1])
+    with open(filename, "a") as outfile:
+        outfile.flush()
+        return_code = subprocess.call(cmd, stdout=outfile)
 
 def dump_table_worker(i, q, db):
     while True:
@@ -42,10 +55,10 @@ if not os.path.isfile(default_file):
 
 log("Connecting to the source database")
 try:
-    db_main=MySQLdb.connect(host=backuphost,read_default_file=default_file)
+    db_main=MySQLdb.connect(read_default_file=default_file)
     c=db_main.cursor()
 except:
-    exitfail("Could not connect to backuphost '%s'" % backuphost)
+    exitfail("Could not connect to backuphost")
 
 log("Get a global lock on")
 c.execute("FLUSH TABLES WITH READ LOCK")
@@ -66,14 +79,15 @@ tables_queue = Queue()
 log("Initializing %d worker threads" % num_threads)
 for i in range(num_threads):
     # num_threads also determines the number of db connections - 1
-    db=MySQLdb.connect(host=backuphost,read_default_file=default_file)
+    db=MySQLdb.connect(read_default_file=default_file)
     worker = Thread(target=dump_table_worker, args=(i, tables_queue, db,))
     worker.setDaemon(True)
     worker.start()
 
 log("Get the list of tables")
 # Get all the tables from information_schema
-c.execute("SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.TABLES WHERE ENGINE IN('MyISAM', 'InnoDB') AND TABLE_SCHEMA NOT IN('information_schema', 'performance_schema') LIMIT 50")
+sql = "SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.TABLES WHERE ENGINE IN('MyISAM', 'InnoDB') AND TABLE_SCHEMA NOT IN('information_schema', 'performance_schema') LIMIT 6"
+c.execute(sql)
 row=c.fetchone()
 
 log("Filling the queue")
